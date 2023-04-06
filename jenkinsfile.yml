@@ -1,0 +1,51 @@
+pipeline {
+  environment {
+    dockerimagename = "hammadmajeed/coinchange"
+    dockerImage = ""
+  }
+  agent any
+  stages {
+    stage('Checkout Source') {
+      steps {
+        git 'https://github.com/hammadmajeed/DockerCI_CD.git'
+      }
+    }
+    stage('running hellow world') {
+      steps {
+        script{
+          docker.withServer('tcp://172.17.173.28:2376') {
+            docker.image('hello-world').withRun{
+            /* do things */
+            }
+          }
+        }
+      }
+    }
+    stage('Build image') {
+      steps{
+        script {
+          dockerImage = docker.build dockerimagename
+        }
+      }
+    }
+    stage('Pushing Image') {
+      environment {
+               registryCredential = 'Dockerhublogin'
+           }
+      steps{
+        script {
+          docker.withRegistry( 'https://registry.hub.docker.com', registryCredential ) {
+            dockerImage.push("latest")
+          }
+        }
+      }
+    }
+    stage('Deploying App to Kubernetes') {
+      steps {
+        script {
+          kubectl apply -f deploymentservice.yml
+        }
+      }
+    }
+  }
+}
