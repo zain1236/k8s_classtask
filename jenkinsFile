@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+
+    stages {    
+        
+        stage('Docker') {
+            steps {
+                script{
+                    image = docker.build("zain1236/myapp:latest")
+                    if (image){
+                        withDockerRegistry([credentialsId: "dockerhub", url: ""]) {
+                            image.push()
+                        }
+                        //bat "docker run -d -p 8080:8080 zain1236/myapp:latest"
+                    }else{
+                        error "Build failed"
+                    }
+                }
+            }
+        }
+        
+        stage('Kubernetes') {
+            steps {
+                script {
+                    bat "minikube delete --all"
+                    bat "minikube start --force-systemd"
+                    bat "kubectl apply -f k8s.yml"
+                    bat "kubectl get pods"
+                    bat "kubectl get svc"
+                    bat "minikube service flask-service --url"
+                }
+            }
+        }
+    }
+}
